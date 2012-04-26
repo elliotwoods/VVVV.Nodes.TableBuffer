@@ -6,7 +6,7 @@ using System.Data;
 using VVVV.PluginInterfaces.V2;
 using System.Diagnostics;
 
-namespace VVVV.Nodes
+namespace VVVV.Nodes.TableBuffer
 {
 	class SpreadTable : DataTable
 	{
@@ -110,23 +110,66 @@ namespace VVVV.Nodes
 
 		public void Insert(ISpread<double> insertSpread)
 		{
+			//insert the row
+			var dataRow = this.Rows.Add();
+
+			Set(dataRow, insertSpread);
+		}
+
+		public void Set(int rowIndex, ISpread<double> setSpread)
+		{
+			if (rowIndex >= this.Rows.Count)
+			{
+				while (rowIndex >= this.Rows.Count)
+					this.Insert(setSpread);
+				return;		
+			}
+
+			var dataRow = this.Rows[rowIndex];
+
+			Set(dataRow, setSpread);
+		}
+
+		public void Set(DataRow row, ISpread<double> spread)
+		{
 			//check whether slice count is too big. if soo add columns
 			//should generally happen on first row only in a spread of spreads
-			while (insertSpread.SliceCount > this.Columns.Count)
+			while (spread.SliceCount > this.Columns.Count)
 			{
 				this.AddColumn(this.Columns.Count.ToString());
 			}
 
-			//insert the row
-			var dataRow = this.Rows.Add();
-
 			//set values
-			for (int i = 0; i < insertSpread.SliceCount; i++)
+			for (int i = 0; i < spread.SliceCount; i++)
 			{
-				dataRow[i] = insertSpread[i];
+				row[i] = spread[i];
 			}
 
 			OnDataChange(null);
+		}
+
+		public void GetRow(DataRow row, ISpread<double> spread)
+		{
+			int count = row.ItemArray.Length;
+			spread.SliceCount = count;
+			for (int i=0; i<count; i++)
+				spread[i] = (double) row[i];
+		}
+
+		public void GetSpread(ISpread<ISpread<double>> output)
+		{
+			var spread = this.Spread;
+			int slicecount = spread.SliceCount;
+			output.SliceCount = slicecount;
+			for (int i = 0; i < slicecount; i++)
+			{
+				int slicecount2 = spread[i].SliceCount;
+				output[i].SliceCount = slicecount2;
+				for (int j = 0; j < slicecount2; j++)
+				{
+					output[i][j] = spread[i][j];
+				}
+			}
 		}
 
 		private DataColumn AddColumn(string name)

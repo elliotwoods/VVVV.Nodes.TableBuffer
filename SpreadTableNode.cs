@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using VVVV.Core.Logging;
 #endregion usings
 
-namespace VVVV.Nodes.OpenNI
+namespace VVVV.Nodes.TableBuffer
 {
 
 	#region PluginInfo
@@ -30,6 +30,9 @@ namespace VVVV.Nodes.OpenNI
 
 		[Input("Save", IsBang = true, IsSingle = true)]
 		ISpread<bool> FPinInSave;
+
+		[Input("Clear", IsBang = true, IsSingle = true)]
+		ISpread<bool> FPinInClear;
 
 		[Input("Filename", IsSingle = true, DefaultString="spreadtable.xml", StringType=StringType.Filename)]
 		IDiffSpread<string> FPinInFilename;
@@ -51,13 +54,13 @@ namespace VVVV.Nodes.OpenNI
 
 		void FTable_DataChanged(Object sender, EventArgs e)
 		{
-			if (FAutosave)
-				Save();
+			FFreshData = true;
 			FTable.SetupColumns(FColumnNames);			
 		}
 
 		bool FFirstRun = true;
 		bool FAutosave = false;
+		bool FFreshData = false;
 		string FFilename = "spreadtable.xml";
 		string FColumnNames = "x,y,z";
 		//called when data for any output pin is requested
@@ -85,12 +88,22 @@ namespace VVVV.Nodes.OpenNI
 			if (FPinInSave[0])
 				Save();
 
+			if (FPinInClear[0])
+				FTable.ClearAll();
+
 			if (FFirstRun)
 			{
 				if (FAutosave)
 					Load();
 				FPinOutTable[0] = FTable;
 				FFirstRun = false;
+			}
+
+			if (FFreshData)
+			{
+				if (FAutosave)
+					Save();
+				FFreshData = false;
 			}
 		}
 

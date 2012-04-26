@@ -14,7 +14,7 @@ using VVVV.Core.Logging;
 using System.ComponentModel;
 #endregion usings
 
-namespace VVVV.Nodes
+namespace VVVV.Nodes.TableBuffer
 {
 	#region PluginInfo
 	[PluginInfo(Name = "TableView", Category = "SpreadTable", Help = "Use a .NET DataGridView to view a SpreadTable", Tags = "", AutoEvaluate = true)]
@@ -27,6 +27,9 @@ namespace VVVV.Nodes
 
 		[Output("Output")]
 		ISpread<ISpread<double>> FOutput;
+
+		[Output("Current row")]
+		ISpread<double> FCurrentRow;
 
 		[Import()]
 		ILogger FLogger;
@@ -113,7 +116,9 @@ namespace VVVV.Nodes
 		//called when data for any output pin is requested
 		public void Evaluate(int SpreadMax)
 		{
-			if (FPinInTable.IsChanged)
+			bool updateOutput = false;
+
+			if (FPinInTable[0] != FData)
 			{
 				FData = FPinInTable[0];
 				if (FData != null)
@@ -121,6 +126,8 @@ namespace VVVV.Nodes
 					FData.DataChanged += new SpreadTable.DataChangedHandler(FData_DataChanged);
 				}
 				FDataGridView.DataSource = FData;
+
+				updateOutput = true;
 			}
 
 			if (FData == null)
@@ -130,19 +137,28 @@ namespace VVVV.Nodes
 			{
 				FDataGridView.Refresh();
 
-				var spread = FData.Spread;
-				int slicecount = spread.SliceCount;
-				FOutput.SliceCount = slicecount;
-				for (int i=0; i<spread.SliceCount; i++)
-				{
-					int slicecount2 = spread[i].SliceCount;
-					FOutput[i].SliceCount = slicecount2;
-					for (int j = 0; j < slicecount2; j++)
-					{
-						FOutput[i][j] = spread[i][j];
-					}
-				}
+				updateOutput = true;
 				FNeedsUpdate = false;
+			}
+
+			if (updateOutput)
+			{
+				FData.GetSpread(FOutput);
+
+				if (FDataGridView.Rows.Count > 0)
+				{
+					DataGridViewRow row;
+					if (FDataGridView.CurrentRow == null)
+						row = FDataGridView.Rows[0];
+					else
+						row = FDataGridView.CurrentRow;
+
+					var cells = row.Cells;
+					FCurrentRow.SliceCount = cells.Count;
+					for (int i = 0; i < cells.Count; i++)
+						FCurrentRow[i] = (double)cells[i].Value;
+				} else
+					FCurrentRow.SliceCount = 0;
 			}
 		}
 

@@ -9,20 +9,17 @@ using VVVV.Core.Logging;
 namespace VVVV.Nodes.TableBuffer
 {
 	#region PluginInfo
-	[PluginInfo(Name = "Insert", Category = "SpreadTable", Help = "Insert values into a SpreadTable (akin to Queue)", Tags = "", AutoEvaluate = true)]
+	[PluginInfo(Name = "Set", Category = "SpreadTable", Help = "Set values in a SpreadTable (akin to S+H)", Tags = "", AutoEvaluate = true)]
 	#endregion PluginInfo
-	public class InsertNode : IPluginEvaluate
+	public class SetNode : IPluginEvaluate
 	{
 		#region fields & pins
 		[Input("Input")]
 		ISpread<ISpread<double>> FInput;
 
-		[Input("Clear", IsBang = true, IsSingle = true)]
-		ISpread<bool> FClear;
-
-		[Input("Insert", IsBang = true)]
-		ISpread<bool> FInsert;
-
+		[Input("Set")]
+		ISpread<bool> FSet;
+		
 		[Input("Table", IsSingle = true)]
 		IDiffSpread<SpreadTable> FPinInTable;
 
@@ -42,16 +39,11 @@ namespace VVVV.Nodes.TableBuffer
 			if (FData == null)
 				return;
 
-			if (FClear[0])
+			for (int i = 0; i < FSet.SliceCount; i++)
 			{
-				FData.ClearAll();
-			}
-
-			for (int i = 0; i < FInsert.SliceCount; i++)
-			{
-				if (FInsert[i])
+				if (FSet[i])
 				{
-					FData.Insert(FInput[i]);
+					FData.Set(i, FInput[i]);
 				}
 			}
 		}
