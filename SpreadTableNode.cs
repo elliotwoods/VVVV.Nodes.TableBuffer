@@ -14,7 +14,7 @@ namespace VVVV.Nodes.TableBuffer
 {
 
 	#region PluginInfo
-	[PluginInfo(Name = "Table", Category = "SpreadTable", Help = "Create an instance of a SpreadTable to be used elsewhere", Tags = "", AutoEvaluate = true)]
+	[PluginInfo(Name = "Table", Category = "Table", Version = "Value", Help = "Create an instance of a SpreadTable to be used elsewhere", Tags = "", AutoEvaluate = true)]
 	#endregion PluginInfo
 	public class SpreadTableNode : IPluginEvaluate
 	{

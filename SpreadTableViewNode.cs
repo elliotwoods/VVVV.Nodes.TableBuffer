@@ -25,11 +25,14 @@ namespace VVVV.Nodes.TableBuffer
 		[Input("Table", IsSingle=true)]
 		IDiffSpread<SpreadTable> FPinInTable;
 
-		[Output("Output")]
-		ISpread<ISpread<double>> FOutput;
+		[Input("Up", IsSingle = true, IsBang = true)]
+		ISpread<bool> FUp;
 
-		[Output("Current row")]
-		ISpread<double> FCurrentRow;
+		[Input("Down", IsSingle = true, IsBang = true)]
+		ISpread<bool> FDown;
+
+		[Output("Index")]
+		ISpread<int> FCurrentIndex;
 
 		[Import()]
 		ILogger FLogger;
@@ -133,6 +136,38 @@ namespace VVVV.Nodes.TableBuffer
 			if (FData == null)
 				return;
 
+			if (FData.Rows.Count > 0)
+			{
+				bool moveRow = false;
+				int selectedRow = 0;
+
+				if (FDataGridView.SelectedCells.Count > 0)
+					selectedRow = FDataGridView.SelectedCells[0].RowIndex;
+				else
+					selectedRow = 0;
+
+				if (FUp[0])
+				{
+					selectedRow++;
+					selectedRow %= FData.Rows.Count;
+					moveRow = true;
+				}
+
+				if (FDown[0])
+				{
+					selectedRow--;
+					if (selectedRow < 0)
+						selectedRow += FData.Rows.Count;
+					moveRow = true;
+				}
+
+				if (moveRow)
+				{
+					FDataGridView.ClearSelection();
+					FDataGridView.Rows[selectedRow].Selected = true;
+				}
+			}
+
 			if (FNeedsUpdate)
 			{
 				FDataGridView.Refresh();
@@ -141,24 +176,28 @@ namespace VVVV.Nodes.TableBuffer
 				FNeedsUpdate = false;
 			}
 
-			if (updateOutput)
+			if (FData.Rows.Count == 0)
 			{
-				FData.GetSpread(FOutput);
-
-				if (FDataGridView.Rows.Count > 0)
+				FCurrentIndex.SliceCount = 1;
+				FCurrentIndex[0] = 0;
+			}
+			else
+			{
+				var rows = FDataGridView.SelectedRows;
+				if (rows.Count > 0)
 				{
-					DataGridViewRow row;
-					if (FDataGridView.CurrentRow == null)
-						row = FDataGridView.Rows[0];
-					else
-						row = FDataGridView.CurrentRow;
-
-					var cells = row.Cells;
-					FCurrentRow.SliceCount = cells.Count;
-					for (int i = 0; i < cells.Count; i++)
-						FCurrentRow[i] = (double)cells[i].Value;
-				} else
-					FCurrentRow.SliceCount = 0;
+					FCurrentIndex.SliceCount = 0;
+					foreach (DataGridViewRow row in rows)
+					{
+						FCurrentIndex.Add(row.Index);
+					}
+				}
+				else
+				{
+					int row = FDataGridView.CurrentCellAddress.Y;
+					FCurrentIndex.SliceCount = 1;
+					FCurrentIndex[0] = row;
+				}
 			}
 		}
 

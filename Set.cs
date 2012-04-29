@@ -9,7 +9,7 @@ using VVVV.Core.Logging;
 namespace VVVV.Nodes.TableBuffer
 {
 	#region PluginInfo
-	[PluginInfo(Name = "Set", Category = "SpreadTable", Help = "Set values in a SpreadTable (akin to S+H)", Tags = "", AutoEvaluate = true)]
+	[PluginInfo(Name = "Set", Category = "Table", Version = "Value", Help = "Set values in a SpreadTable (akin to S+H)", Tags = "", AutoEvaluate = true)]
 	#endregion PluginInfo
 	public class SetNode : IPluginEvaluate
 	{
@@ -17,11 +17,14 @@ namespace VVVV.Nodes.TableBuffer
 		[Input("Input")]
 		ISpread<ISpread<double>> FInput;
 
-		[Input("Set")]
+		[Input("Index")]
+		ISpread<int> FIndex;
+
+		[Input("Set", IsBang=true)]
 		ISpread<bool> FSet;
-		
+
 		[Input("Table", IsSingle = true)]
-		IDiffSpread<SpreadTable> FPinInTable;
+		ISpread<SpreadTable> FPinInTable;
 
 		[Import()]
 		ILogger FLogger;
@@ -43,7 +46,10 @@ namespace VVVV.Nodes.TableBuffer
 			{
 				if (FSet[i])
 				{
-					FData.Set(i, FInput[i]);
+					if (FIndex.SliceCount > 0)
+						FData.Set(FInput[i], FIndex[i]);
+					else
+						FData.Set(FInput[i], 0);
 				}
 			}
 		}

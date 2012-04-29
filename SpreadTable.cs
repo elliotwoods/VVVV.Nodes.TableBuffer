@@ -96,34 +96,42 @@ namespace VVVV.Nodes.TableBuffer
 			{
 				//we preserve our own column count, but take new row count
 				this.Rows.Clear();
-				this.Insert( (ISpread<ISpread<double>>) value);
+				this.Insert( (ISpread<ISpread<double>>) value, 0);
 			}
 		}
 
-		public void Insert(ISpread<ISpread<double>> insertSpread)
+		public void Insert(ISpread<ISpread<double>> insertSpread, int index)
 		{
 			foreach (var row in insertSpread)
 			{
-				Insert(row);
+				Insert(row, index);
 			}
 		}
 
-		public void Insert(ISpread<double> insertSpread)
+		public void Insert(ISpread<double> insertSpread, int index)
 		{
-			//insert the row
-			var dataRow = this.Rows.Add();
+			if (this.Rows.Count == 0)
+				index = 0;
 
-			Set(dataRow, insertSpread);
+			index = VVVV.Utils.VMath.VMath.Zmod(index, this.Rows.Count + 1);
+
+			DataRow row = this.NewRow();
+
+			//insert the row at right location
+			if (index == this.Rows.Count)
+				this.Rows.Add(this.NewRow()); // add it to end of collection
+			else
+				this.Rows.InsertAt(row, index); // insert it somewhere inside collection
+
+			Set(row, insertSpread);
 		}
 
-		public void Set(int rowIndex, ISpread<double> setSpread)
+		public void Set(ISpread<double> setSpread, int rowIndex)
 		{
-			if (rowIndex >= this.Rows.Count)
-			{
-				while (rowIndex >= this.Rows.Count)
-					this.Insert(setSpread);
-				return;		
-			}
+			if (this.Rows.Count == 0)
+				Insert(setSpread, 0);
+
+			rowIndex = VVVV.Utils.VMath.VMath.Zmod(rowIndex, this.Rows.Count);
 
 			var dataRow = this.Rows[rowIndex];
 
