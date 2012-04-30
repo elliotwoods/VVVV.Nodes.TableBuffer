@@ -11,14 +11,11 @@ namespace VVVV.Nodes.TableBuffer
 	#region PluginInfo
 	[PluginInfo(Name = "Insert", Help = "Insert values into a SpreadTable (akin to Queue)", Tags = "", AutoEvaluate = true)]
 	#endregion PluginInfo
-	public class InsertNode : IPluginEvaluate
+	public class InsertNode : IHasTable
 	{
 		#region fields & pins
 		[Input("Input")]
 		ISpread<ISpread<double>> FInput;
-
-		[Input("Clear", IsBang = true, IsSingle = true)]
-		ISpread<bool> FClear;
 
 		[Input("Insert", IsBang = true, DefaultValue=-1)]
 		ISpread<bool> FInsert;
@@ -29,30 +26,10 @@ namespace VVVV.Nodes.TableBuffer
 		[Input("Index")]
 		ISpread<int> FIndex;
 
-		[Input("Table", IsSingle = true)]
-		IDiffSpread<SpreadTable> FPinInTable;
-
-		[Import()]
-		ILogger FLogger;
-
-		SpreadTable FData;
 		#endregion
 
-		public void Evaluate(int SpreadMax)
+		protected override void Evaluate2(int SpreadMax)
 		{
-			if (FPinInTable.IsChanged)
-			{
-				FData = FPinInTable[0];
-			}
-
-			if (FData == null)
-				return;
-
-			if (FClear[0])
-			{
-				FData.ClearAll();
-			}
-
 			if (FIndex.SliceCount > 0)
 			{
 				for (int i = 0; i < FInsert.SliceCount; i++)

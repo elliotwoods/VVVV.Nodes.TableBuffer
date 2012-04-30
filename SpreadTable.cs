@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace VVVV.Nodes.TableBuffer
 {
-	class SpreadTable : DataTable
+	public class SpreadTable : DataTable
 	{
 		public delegate void DataChangedHandler(Object sender, EventArgs e);
 		public event DataChangedHandler DataChanged;
@@ -108,7 +108,7 @@ namespace VVVV.Nodes.TableBuffer
 			}
 		}
 
-		public void Insert(ISpread<double> insertSpread, int index)
+		public void Insert(ISpread<double> valueSpread, int index)
 		{
 			if (this.Rows.Count == 0)
 				index = 0;
@@ -123,34 +123,40 @@ namespace VVVV.Nodes.TableBuffer
 			else
 				this.Rows.InsertAt(row, index); // insert it somewhere inside collection
 
-			Set(row, insertSpread);
+			Spread<bool> setSpread = new Spread<bool>(1);
+			setSpread[0] = true;
+			Set(row, valueSpread, setSpread);
 		}
 
-		public void Set(ISpread<double> setSpread, int rowIndex)
+		public void Set(ISpread<double> valueSpread, int rowIndex, ISpread<bool> setSpread)
 		{
 			if (this.Rows.Count == 0)
-				Insert(setSpread, 0);
+			{
+				Insert(valueSpread, 0);
+			}
+			else
+			{
+				rowIndex = VVVV.Utils.VMath.VMath.Zmod(rowIndex, this.Rows.Count);
+				var dataRow = this.Rows[rowIndex];
+				Set(dataRow, valueSpread, setSpread);
+			}
 
-			rowIndex = VVVV.Utils.VMath.VMath.Zmod(rowIndex, this.Rows.Count);
-
-			var dataRow = this.Rows[rowIndex];
-
-			Set(dataRow, setSpread);
 		}
 
-		public void Set(DataRow row, ISpread<double> spread)
+		public void Set(DataRow row, ISpread<double> values, ISpread<bool> set)
 		{
 			//check whether slice count is too big. if soo add columns
 			//should generally happen on first row only in a spread of spreads
-			while (spread.SliceCount > this.Columns.Count)
+			while (Math.Max(values.SliceCount, set.SliceCount) > this.Columns.Count)
 			{
 				this.AddColumn(this.Columns.Count.ToString());
 			}
 
 			//set values
-			for (int i = 0; i < spread.SliceCount; i++)
+			for (int i = 0; i < row.ItemArray.Length; i++)
 			{
-				row[i] = spread[i];
+				if (set[i])
+					row[i] = values[i];
 			}
 
 			OnDataChange(null);

@@ -22,14 +22,14 @@ namespace VVVV.Nodes.TableBuffer
 	public class SpreadTableViewNode : UserControl, IPluginEvaluate
 	{
 		#region fields & pins
-		[Input("Table", IsSingle=true)]
-		IDiffSpread<SpreadTable> FPinInTable;
-
 		[Input("Up", IsSingle = true, IsBang = true)]
 		ISpread<bool> FUp;
 
 		[Input("Down", IsSingle = true, IsBang = true)]
 		ISpread<bool> FDown;
+
+		[Input("Table", IsSingle = true)]
+		ISpread<SpreadTable> FPinInTable;
 
 		[Output("Index")]
 		ISpread<int> FCurrentIndex;
@@ -116,21 +116,20 @@ namespace VVVV.Nodes.TableBuffer
 
 		#endregion constructor and init
 
-		//called when data for any output pin is requested
 		public void Evaluate(int SpreadMax)
 		{
-			bool updateOutput = false;
-
 			if (FPinInTable[0] != FData)
 			{
+				if (FData != null)
+				{
+					FData.DataChanged -= new SpreadTable.DataChangedHandler(FData_DataChanged);
+				}
 				FData = FPinInTable[0];
 				if (FData != null)
 				{
 					FData.DataChanged += new SpreadTable.DataChangedHandler(FData_DataChanged);
 				}
 				FDataGridView.DataSource = FData;
-
-				updateOutput = true;
 			}
 
 			if (FData == null)
@@ -171,8 +170,6 @@ namespace VVVV.Nodes.TableBuffer
 			if (FNeedsUpdate)
 			{
 				FDataGridView.Refresh();
-
-				updateOutput = true;
 				FNeedsUpdate = false;
 			}
 
